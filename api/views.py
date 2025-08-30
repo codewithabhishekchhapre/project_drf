@@ -3,6 +3,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from .serializers import SignupSerializer
 from .serializers import LoginSerializer
+from .serializers import OtpSerializer;
+from .models import CustomUser, Otp
+import random
+from django.utils import timezone
+import datetime
 
 @api_view(['POST'])
 def signup(request):
@@ -39,3 +44,41 @@ def login(request):
         return Response({"message": "Login successful", "user": user_data}, status=status.HTTP_200_OK)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def generate_otp():
+    return str(random.randint(100000, 999999))
+
+@api_view(['POST'])
+def send_otp(request):
+    serializer = OtpSerializer(data=request.data)
+    if serializer.is_valid():
+        email = serializer.validated_data['email']
+        otp_type = serializer.validated_data['otp_type']
+
+        # generate otp
+        otp = generate_otp()
+        expires_at = timezone.now() + datetime.timedelta(minutes=5)
+
+       # check if otp already exists for this email + type
+        otp_obj = Otp.objects.filter(email=email, otp_type=otp_type).first()
+
+        if otp_obj:
+            # ✅ update existing OTP
+            otp_obj.otp = otp
+            otp_obj.expires_at = expires_at
+            otp_obj.save()
+            message = "OTP updated successfully"
+            status_code = status.HTTP_200_OK
+        else:
+            # ✅ create new OTP record
+            Otp.objects.create(
+                email=email,
+                otp_type=otp_type,
+                otp=otp,
+                expires_at=expires_at
+            )
+        return Response({"message": "OTP sent successfully"}, status=status.HTTP_200_OK)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

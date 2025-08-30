@@ -85,3 +85,40 @@ class LoginSerializer(serializers.Serializer):
 
         except CustomUser.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials.")
+
+
+
+
+# email , otp_type ('email_verification', 'password_reset')
+
+class OtpSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp_type = serializers.ChoiceField(choices=['email_verification', 'password_reset'])
+    
+    def validate(self , data):
+        email= data.get('email')
+        otp_type= data.get('otp_type')
+        
+        user = CustomUser.objects.filter(email=email).first()
+
+        if otp_type == "email_verification" and user.is_email_verified:
+            raise serializers.ValidationError("User already verified")
+        
+        if otp_type == "password_reset" and not user.is_email_verified:
+           raise serializers.ValidationError("Inactive users cannot reset password")
+        
+        return data
+    
+    def validate_email(self, value):
+        if not CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email does not exist")
+        return value
+    
+    def validate_otp_type(self, value):
+        valid_types = ['email_verification', 'password_reset']
+        if value not in valid_types:
+            raise serializers.ValidationError("Invalid OTP type. Choose from email_verification, password_reset.")
+        return value
+    
+        
+        

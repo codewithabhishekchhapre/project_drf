@@ -33,3 +33,13 @@ class CustomUser(models.Model):
 
     def __str__(self):
         return f"{self.username} - {self.role}"
+
+
+class Otp(models.Model):
+    email = models.EmailField()
+    otp_type = models.CharField(max_length=50)  # e.g., 'email_verification', 'mobile_verification', 'password_reset'
+    otp=models.CharField(max_length=6)
+    expires_at = models.DateTimeField()
+    
+    def __str__(self):
+        return f"OTP for {self.email} - Type: {self.otp_type}"
