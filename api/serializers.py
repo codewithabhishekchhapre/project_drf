@@ -120,5 +120,54 @@ class OtpSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid OTP type. Choose from email_verification, password_reset.")
         return value
     
+
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    verify_otp = serializers.CharField(max_length=6)
+    new_password = serializers.CharField(write_only=True, min_length=6)
+    confirm_password = serializers.CharField(write_only=True, min_length=6)
+
+    def validate(self, data):
+        email = data.get("email")
+        verify_otp = data.get("verify_otp")
+        new_password = data.get("new_password")
+        confirm_password = data.get("confirm_password")
+
+        # confirm passwords match
+        if new_password != confirm_password:
+            raise serializers.ValidationError("Passwords do not match")
+
+        # check user exists
+        from .models import CustomUser
+        user = CustomUser.objects.filter(email=email).first()
+        if not user:
+            raise serializers.ValidationError("User not found")
+
+        # match otp with what verify_otp API gave
+        if not verify_otp:
+            raise serializers.ValidationError("OTP verification required before reset password")
+
+        data["user"] = user
+        return data    
         
+       
+
+class ImageUploadSerializer(serializers.Serializer):
+    image = serializers.ImageField(required=True)
+    
+    
+class MultiImageUploadSerializer(serializers.Serializer):
+    images = serializers.ListField(
+        child=serializers.ImageField(),
+        allow_empty=False
+    )
+            
         
+from rest_framework import serializers
+from .models import CustomUser
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        exclude = ["password"]  # don't expose passwords
+       
