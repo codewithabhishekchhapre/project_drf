@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\Lenovo\Desktop\project_drf
+set VIRTUAL_ENV=G:\project_drf
 
 if not defined PROMPT set PROMPT=$P$G
 
